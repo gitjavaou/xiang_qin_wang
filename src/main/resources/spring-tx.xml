@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
+	<!-- 包扫描 -->
+	<context:component-scan base-package="com.atguigu.xiang_qin.demo.service"/>
+	
+	<!-- 引入外部文件 -->
+	<context:property-placeholder location="classpath:jdbc.properties" />
+	
+	<!-- 配置数据源 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="user" value="${jdbc_user}"/>
+		<property name="password" value="${jdbc_password}"/>
+		<property name="jdbcUrl" value="${jdbc_url}"/>
+		<property name="driverClass" value="${jdbc_driver}"/>
+	</bean>
+	
+	<!-- 配置SqlSessionFactoryBean -->
+	<bean id="sqlSessionFactoryBean" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"/>
+		
+		<!-- 指定mybatis配置文件的位置 -->
+		<property name="configLocation" value="classpath:mybatis-conf.xml"/>
+		
+		<!-- 指定mapper.xml配置文件的位置,本项目暂时不用，记录在此，当做参考 -->
+		<!-- <property name="mapperLocations" value=""/> -->
+	</bean>
+	
+	<!-- 自动扫描mapper接口所在的包 -->
+	<bean id="mapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.atguigu.xiang_qin.demo.mapper"/>
+	</bean>
+	
+	<!-- 配置事务管理器 -->
+	<bean id="dataSourceTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	
+	<!-- 配置基于xml的声明式事务 -->
+	<!-- aop名称空间部分 -->
+	<aop:config>
+	
+		<!-- 声明式事务和事务切入点表达式 -->
+		<aop:pointcut expression="execution(* *..*service.*(..))" id="txPointcut"/>
+		
+		<!-- 将切入点表达式和事务通知结合起来 -->
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="txPointcut"/>
+		
+	</aop:config>
+		
+	<!-- tx名称空间部分 -->
+	<tx:advice id="txAdvice" transaction-manager="dataSourceTransactionManager">
+		<tx:attributes>
+			<tx:method name="get*" read-only="true"/>
+			<tx:method name="update*" rollback-for="java.lang.Exception" propagation="REQUIRES_NEW" />
+			<tx:method name="delete*" rollback-for="java.lang.Exception" propagation="REQUIRES_NEW"/>
+			<tx:method name="insert*" rollback-for="java.lang.Exception" propagation="REQUIRES_NEW"/>
+		</tx:attributes>
+	</tx:advice>
+	
+	<!-- 配置solrserver的bean  -->	
+	<bean id="httpSolrServer" class="org.apache.solr.client.solrj.impl.HttpSolrServer">
+		<constructor-arg index="0" value="http://192.168.162.243:8080/solr/core_xiang_qin"/>
+	</bean>
+	 
+</beans>
